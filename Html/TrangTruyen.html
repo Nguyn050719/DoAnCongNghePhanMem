@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CManga - Trang Cá nhân</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet"/>
+  <link rel="stylesheet" type="text/css" href="../Css/trangtruyen.css" />
+
+  </head>
+<body>
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <i class="fas fa-bars menu-icon" id="menu-toggle"></i>
+      <div class="logo">CMANGA</div>
+    </div>
+    <div class="top-bar-right">
+      <div class="search-box">
+        <input type="text" placeholder="Tìm kiếm">
+        <button class="search-button"><i class="fas fa-search"></i></button>
+      </div>
+      <div class="login-icon" id="login-icon">
+        <img id="avatarTopRight" src="" style="display: none;" />
+      </div>
+      <div class="user-menu" id="user-menu">
+        <a href="DuyetBai.html" id="duyet-bai-link"><i class="fas fa-star"></i> Duyệt bài</a>
+        <a href="CapQuyen.html" id="cap-quyen-link"><i class="fas fa-star"></i> Cấp quyền</a>
+        <a href="QuanLyTruyen.html" id="quan-ly-link"><i class="fas fa-tools"></i> Quản lý truyện</a>
+        <a href="UpTruyen.html" id="upload-link"><i class="fas fa-tools"></i>Đăng truyện</a>
+        <a href="#"><i class="fas fa-bell"></i> Thông báo</a>
+        <a href="TrangCaNhan.html"><i class="fas fa-user"></i> Trang cá nhân</a>
+        <a href="#"><i class="fas fa-bookmark"></i> Theo dõi</a>
+        <a href="#"><i class="fas fa-history"></i> Đã đọc</a>
+        <a href="#" id="logout"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
+      </div>
+    </div>
+  </div>
+  <div class="content">
+  <div class="manga-detail">
+    <div class="row">
+      <div class="col-md-3">
+        <img src="" class="img-fluid rounded manga-image" alt="Bìa truyện">
+      </div>
+      <div class="col-md-9">
+  <h3 class="manga-title">Đang tải...</h3>
+  
+  <div class="manga-tags"></div>
+
+  <div class="info-line"><strong>Tình trạng:</strong> <span class="manga-status"></span></div>
+  <div class="info-line"><strong>Lượt xem:</strong> <span class="manga-views"></span></div>
+  <div class="info-line"><strong>Theo dõi:</strong> <span class="manga-follow"></span></div>
+
+  <div class="manga-actions">
+    <button class="btn btn-primary" id="btn-start-reading">Đọc từ đầu</button>
+    <button class="btn btn-outline-danger">Báo lỗi</button>
+    <button class="btn btn-warning" id="btn-follow">Theo dõi</button>
+    <button class="btn btn-success" id="btn-add-chapter" style="display: none;"> Thêm Chapter</button>
+  </div>
+</div>
+    </div>
+
+    <hr>
+    <h5><i class="fas fa-info-circle"></i> Giới thiệu</h5>
+    <p class="manga-description">...</p>
+
+    <hr>
+    <h5><i class="fas fa-list"></i> Danh sách chương</h5>
+    <div class="chapter-list">
+      <table>
+        <thead>
+          <tr>
+            <th>Chapter</th>
+            <th>Cập Nhật</th>
+            <th>Lượt Xem</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const menuToggle = document.getElementById("menu-toggle");
+    const sidebar = document.getElementById("sidebar");
+    const loginIcon = document.getElementById("login-icon");
+    const userMenu = document.getElementById("user-menu");
+    const avatarTopRight = document.getElementById("avatarTopRight");
+
+    // Hiển thị Sidebar
+    menuToggle?.addEventListener("click", () => {
+      sidebar.classList.toggle("active");
+    });
+
+    // Hiển thị User Menu khi nhấn avatar
+    loginIcon?.addEventListener("click", function (e) {
+      e.stopPropagation();
+      userMenu.style.display = (userMenu.style.display === "flex") ? "none" : "flex";
+    });
+
+    // Ẩn khi click ra ngoài
+    document.addEventListener("click", function (e) {
+      if (!userMenu.contains(e.target) && e.target !== loginIcon) {
+        userMenu.style.display = "none";
+      }
+    });
+    
+    // Load avatar từ localStorage
+    // const isLoggedIn = localStorage.getItem("isLoggedIn") = "true";
+    const avatar = localStorage.getItem("avatar");
+    if ( avatar) {//isLoggedIn &&
+      avatarTopRight.src = avatar;
+      avatarTopRight.style.display = "block";
+      avatarTopRight.style.width = "40px";
+      avatarTopRight.style.height = "40px";
+      avatarTopRight.style.objectFit = "cover";
+      avatarTopRight.style.borderRadius = "50%";
+    }
+
+    // Hiển thị các menu theo quyền
+    const role = localStorage.getItem("role");
+    const duyetBaiLink = document.getElementById("duyet-bai-link");
+    const capQuyenLink = document.getElementById("cap-quyen-link");
+    const quanLyLink = document.getElementById("quan-ly-link");
+    const upLoadLink = document.getElementById("upload-link");
+
+    if (duyetBaiLink) duyetBaiLink.style.display = "none";
+    if (capQuyenLink) capQuyenLink.style.display = "none";
+    if (quanLyLink) quanLyLink.style.display = "none";
+    if (upLoadLink) upLoadLink.style.display = "none";
+
+    if (role === "admin") {
+      if (duyetBaiLink) duyetBaiLink.style.display = "flex";
+      if (quanLyLink) quanLyLink.style.display = "flex";
+    } else if (role === "user") {
+      if (capQuyenLink) capQuyenLink.style.display = "flex";
+    } else if (role === "author") {
+      if (upLoadLink) upLoadLink.style.display = "flex";
+    }
+
+    // Đăng xuất
+    document.getElementById("logout")?.addEventListener("click", function () {
+      localStorage.clear();
+      window.location.href = "DangNhap.html";
+    });
+
+
+  });
+</script>
+<script>
+document.getElementById("btn-add-chapter")?.addEventListener("click", () => {
+  const params = new URLSearchParams(window.location.search);
+  const comicId = params.get("id");
+  window.location.href = `UpChapter.html?id=${comicId}`;
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(window.location.search);
+  const comicId = params.get("id");
+
+  fetch(`../PHP/getMangaDetail.php?id=${comicId}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        const comic = data.comic;
+        const chapters = data.chapters;
+
+        // ✅ Sửa userID -> uses_id
+        const userRole = localStorage.getItem("role");
+        const userUsesId = localStorage.getItem("userID");
+        if (userRole === "author" ) {//&& userUsesId === comic.UsesID
+          document.getElementById("btn-add-chapter").style.display = "inline-block";
+        }
+
+        // Hiển thị thông tin truyện
+        document.querySelector(".manga-title").textContent = comic.Title;
+        document.querySelector(".manga-description").textContent = comic.Description;
+        document.querySelector(".manga-tags").innerHTML = comic.Genre.split(',').map(tag => `<span>${tag}</span>`).join('');
+        document.querySelector(".manga-status").textContent = comic.Status;
+        document.querySelector(".manga-image").src = comic.Image;
+        document.querySelector(".manga-views").textContent = comic.Views;
+        document.querySelector(".manga-follow").textContent = comic.Follow;
+
+        // Danh sách chapter
+        const tableBody = document.querySelector(".chapter-list tbody");
+        tableBody.innerHTML = "";
+
+        chapters.forEach(chap => {
+          const row = document.createElement("tr");
+          row.classList.add("clickable-row");
+          
+          // ✅ Sửa đúng định dạng cột CHAPTER_ID
+          const chapId = chap.CHAPTER_ID || chap.ChapterID || chap.chapter_id || chap.id;
+
+          row.setAttribute("data-id", chapId);
+
+          row.innerHTML = `
+            <td>${chap.ChapterTitle}</td>
+            <td>${chap.UpdatedAt}</td>
+            <td>${chap.Views}</td>
+          `;
+          tableBody.appendChild(row);
+        });
+
+        // Gán sự kiện click
+        document.querySelectorAll(".clickable-row").forEach(row => {
+        row.addEventListener("click", () => {
+        const chapterId = row.getAttribute("data-id");
+        localStorage.setItem("selected_chapter_id", chapterId);
+        window.location.href = `TrangDocTruyen.html?comic_id=${comicId}&chapter_number=${chapterId}`;
+});
+        });
+      }
+    })
+    .catch(err => console.error("Lỗi khi lấy thông tin truyện:", err));
+});
+
+document.getElementById("btn-follow")?.addEventListener("click", () => {
+  const comicId = new URLSearchParams(window.location.search).get("id");
+  const usesId = localStorage.getItem("userID");
+
+  if (!usesId) {
+    alert("Bạn cần đăng nhập để theo dõi truyện.");
+    return;
+  }
+
+  fetch("../PHP/followComic.php", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ uses_id: usesId, comic_id: comicId }),
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        alert("Đã theo dõi truyện!");
+        // Tăng số lượng theo dõi hiển thị
+        const followElement = document.querySelector(".manga-follow");
+        followElement.textContent = parseInt(followElement.textContent || "0") + 1;
+      } else {
+        alert(data.message || "Bạn đã theo dõi truyện này rồi.");
+      }
+    })
+    .catch(err => {
+      console.error("Lỗi theo dõi:", err);
+      alert("Có lỗi xảy ra.");
+    });
+});
+</script>
+</body>
+</html>

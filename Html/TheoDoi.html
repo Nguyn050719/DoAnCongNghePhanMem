@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Truyện đang theo dõi</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      background-color: #0f172a;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 30px;
+    }
+    h2 {
+      color: #60a5fa;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #1e293b;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #334155;
+    }
+    th {
+      background-color: #1e40af;
+    }
+    tr:hover {
+      background-color: #2c3e50;
+    }
+    .btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-read {
+      background-color: #10b981;
+      color: white;
+    }
+    .btn-unfollow {
+      background-color: #ef4444;
+      color: white;
+    }
+    .thumbnail {
+      width: 60px;
+      height: 80px;
+      border-radius: 6px;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
+  <h2>Truyện đang theo dõi</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Ảnh bìa</th>
+        <th>Tiêu đề</th>
+        <th>Tác giả</th>
+        <th>Trạng thái</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody id="followTable"></tbody>
+  </table>
+
+  <script>
+    const usesId = localStorage.getItem("userID");
+
+    fetch(`../PHP/getFollowList.php?uses_id=${usesId}`)
+      .then(res => res.json())
+      .then(data => {
+        const tbody = document.getElementById("followTable");
+        tbody.innerHTML = "";
+
+        data.forEach(item => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><img src="${item.COVER_IMAGE}" class="thumbnail" /></td>
+            <td>${item.TITLE}</td>
+            <td>${item.AUTHOR}</td>
+            <td>${item.STATUS}</td>
+            <td>
+              <button class="btn btn-read" onclick="window.location.href='TrangTruyen.html?id=${item.COMIC_ID}'">
+                Xem truyện
+              </button>
+              <button class="btn btn-unfollow" onclick="unfollow('${item.FOLLOW_ID}')">
+                Hủy theo dõi
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      });
+
+    function unfollow(followId) {
+      fetch(`../PHP/unfollowComic.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ follow_id: followId })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            alert("Đã hủy theo dõi!");
+            location.reload();
+          } else {
+            alert("Hủy theo dõi thất bại!");
+          }
+        });
+    }
+  </script>
+</body>
+</html>

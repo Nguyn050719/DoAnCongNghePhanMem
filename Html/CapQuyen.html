@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Yêu Cầu Cấp Quyền</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .request-box {
+      background: #1e293b;
+      padding: 35px 30px;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 450px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+      animation: fadeIn 0.4s ease;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #3b82f6;
+      font-size: 26px;
+      font-weight: 700;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 15px;
+      color: #cbd5e1;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px 15px;
+      border-radius: 12px;
+      background: #334155;
+      color: #e2e8f0;
+      font-size: 14px;
+      border: 1px solid #475569;
+      resize: vertical;
+      min-height: 100px;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    textarea::placeholder {
+      color: #94a3b8;
+    }
+
+    textarea:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+
+    button {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(90deg, #3b82f6, #2563eb);
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    button:hover {
+      background: linear-gradient(90deg, #2563eb, #1d4ed8);
+      transform: translateY(-1px);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .message {
+  text-align: center;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: bold;
+  transition: 0.3s;
+}
+.message.success {
+  color: lightgreen;
+}
+.message.error {
+  color: #ff4d4d;
+}
+  </style>
+</head>
+<body>
+  <div class="request-box">
+    <h2>Yêu Cầu Cấp Quyền</h2>
+    <form id="requestForm">
+      <div class="form-group">
+        <label for="reason">Lý do bạn muốn đăng truyện:</label>
+        <textarea id="reason" placeholder="Nhập lý do của bạn..." required></textarea>
+      </div>
+      <button type="submit">Gửi yêu cầu</button>
+      <p id="request-message" class="message"></p>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById("requestForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const reason = document.getElementById("reason").value.trim();
+      const userID = localStorage.getItem("userID");
+
+      if (!reason) return alert("Vui lòng nhập lý do!");
+      if (!userID) return alert("Bạn chưa đăng nhập. Vui lòng đăng nhập trước!");
+
+      fetch("../PHP/request.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason, userID })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const message = document.getElementById("request-message");
+message.textContent = data.message;
+message.className = "message " + (data.success ? "success" : "error");
+
+if (data.success) {
+  document.getElementById("requestForm").reset();
+  setTimeout(() => {
+    message.textContent = "";
+  }, 3000); // Ẩn sau 3 giây
+}
+      })
+      .catch(err => {
+        console.error("Lỗi gửi yêu cầu:", err);
+        alert("Gửi yêu cầu thất bại. Vui lòng thử lại.");
+      });
+    });
+  </script>
+</body>
+</html>

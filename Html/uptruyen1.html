@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Đăng Truyện Mới</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #0f172a;
+      color: white;
+      font-family: 'Arial', sans-serif;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .upload-box {
+      background: #1e293b;
+      padding: 30px 25px;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.7);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #a855f7;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: #334155;
+      color: white;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input::placeholder, textarea::placeholder {
+      color: #cbd5e1;
+    }
+    input:focus, textarea:focus {
+      border-color: #7c3aed;
+    }
+    input[type="file"] {
+      padding: 8px;
+      background: #334155;
+      color: #cbd5e1;
+      cursor: pointer;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(45deg, #7c3aed, #6366f1);
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: linear-gradient(45deg, #6366f1, #4f46e5);
+    }
+  </style>
+</head>
+<body>
+  <div class="upload-box">
+    <h2>Đăng Truyện</h2>
+    <form id="uploadForm">
+      <div class="form-group">
+        <label for="title">Tên Truyện</label>
+        <input type="text" id="title" placeholder="Nhập tiêu đề truyện..." required>
+      </div>
+      <div class="form-group">
+        <label for="cover">Ảnh bìa</label>
+        <input type="file" id="cover" accept="image/*" required>
+      </div>
+      <div class="form-group">
+        <label for="description">Mô tả</label>
+        <textarea id="description" rows="3" placeholder="Nhập mô tả truyện..." required></textarea>
+      </div>
+      <div class="form-group">
+        <label for="genre">Thể loại</label>
+        <input type="text" id="genre" placeholder="Ví dụ: Hành động, Phiêu lưu">
+      </div>
+      <div class="form-group">
+        <label for="author">Tác giả</label>
+        <input type="text" id="author" placeholder="Tên tác giả...">
+      </div>
+      <button type="submit">Đăng Truyện</button>
+    </form>
+  </div>
+
+  <script>
+  document.getElementById("uploadForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  const formData = new FormData();
+  formData.append("title", document.getElementById("title").value.trim());
+  formData.append("description", document.getElementById("description").value.trim());
+  formData.append("author", document.getElementById("author").value.trim());
+  formData.append("cover", document.getElementById("cover").files[0]);
+  formData.append("genre", document.getElementById("genre").value.trim()); 
+
+  fetch("../PHP/uploadTruyen.php", {
+    method: "POST",
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    alert(data.message);
+    if (data.success) {
+      document.getElementById("uploadForm").reset(); // Xoá form sau khi đăng thành công
+    }
+  })
+  .catch(error => {
+    console.error("Lỗi:", error);
+    alert("Lỗi kết nối server.");
+  });
+});
+
+</script>
+</body>
+</html>

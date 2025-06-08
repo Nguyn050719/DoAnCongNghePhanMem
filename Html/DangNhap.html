@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng nhập WebTruyen</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    body {
+      height: 100vh;
+      background: linear-gradient(135deg, #2c3e50, #34495e);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+    }
+    .login-box {
+      background: rgba(20, 20, 40, 0.9);
+      padding: 30px;
+      border-radius: 16px;
+      width: 350px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    .tabs {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      opacity: 0.6;
+      transition: 0.3s;
+    }
+    .tab-btn.active {
+      opacity: 1;
+      font-weight: bold;
+      border-bottom: 2px solid #6c78ff;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+    input[type="text"], input[type="email"], input[type="password"] {
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
+      background-color: rgba(255,255,255,0.1);
+      color: white;
+    }
+    input::placeholder { color: #ccc; }
+    .btn-primary {
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(45deg, #6c78ff, #4b5fef);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+      margin-top: 10px;
+    }
+    .btn-primary:hover { background: linear-gradient(45deg, #5a66e0, #3a4ccc); }
+    .message {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+    .message.success { color: lightgreen; }
+    .message.error { color: #ff4d4d; }
+    .forgot-link {
+      text-align: center;
+      margin-top: 10px;
+    }
+    .forgot-link a {
+      color: #6c78ff;
+      text-decoration: underline;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="login">Đăng nhập</button>
+      <button class="tab-btn" data-tab="register">Đăng ký</button>
+    </div>
+
+    <div id="login" class="tab-content active">
+      <form id="loginForm" action="login.php" method="POST">
+        <input type="text" id="login-username" name="username" placeholder="Tên đăng nhập hoặc email" required />
+        <input type="password" id="login-password" name="password" placeholder="Mật khẩu" required />
+        <button type="submit" class="btn-primary">Đăng nhập</button>
+        <p id="login-message" class="message"></p>
+      </form>
+      <div class="forgot-link">
+        <a href="#" id="showForgot">Quên mật khẩu?</a>
+      </div>
+    </div>
+
+    <div id="register" class="tab-content">
+      <form id="registerForm">
+        <input type="text" id="register-username" name="username" placeholder="Tên đăng nhập" required />
+        <input type="email" id="register-email" name="email" placeholder="Email" required />
+        <input type="password" id="register-password" name="password" placeholder="Mật khẩu" required />
+        <input type="password" id="register-confirm" placeholder="Xác nhận mật khẩu" required />
+        <button type="submit" class="btn-primary">Đăng ký</button>
+        <p id="register-message" class="message"></p>
+      </form>
+    </div>
+
+    <div id="forgotForm" class="tab-content">
+  <form id="forgot-password-form">
+    <input type="email" id="forgot-email" placeholder="Email đăng nhập" required>
+    <button type="submit" class="btn-primary">Lấy lại mật khẩu</button>
+    <p id="forgot-message" class="message"></p>
+    <div class="forgot-link">
+      <a href="#" id="backToLogin">Đăng nhập</a>
+    </div>
+  </form>
+</div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        contents.forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    document.getElementById("registerForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const username = document.getElementById("register-username").value.trim();
+      const email = document.getElementById("register-email").value.trim();
+      const password = document.getElementById("register-password").value.trim();
+      const confirm = document.getElementById("register-confirm").value.trim();
+      const message = document.getElementById("register-message");
+      const usernameRegex = /^[a-zA-Z0-9]{6,20}$/;
+
+      if (!usernameRegex.test(username)) {
+        message.textContent = "Tên đăng nhập 6-20 ký tự, không ký tự đặc biệt.";
+        message.className = "message error";
+        return;
+      }
+
+      if (password.length < 8 || password.length > 30) {
+        message.textContent = "Mật khẩu 8-30 ký tự.";
+        message.className = "message error";
+        return;
+      }
+
+      if (password !== confirm) {
+        message.textContent = "Mật khẩu xác nhận không khớp.";
+        message.className = "message error";
+        return;
+      }
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "../PHP/register.php", true);
+      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+      xhr.onload = function() {
+        if (xhr.status === 200) {
+          message.textContent = xhr.responseText;
+          if (xhr.responseText.includes("thành công")) {
+            message.className = "message success";
+            document.getElementById("registerForm").reset();
+          } else {
+            message.className = "message error";
+          }
+        }
+      };
+      xhr.send(`username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
+    });
+  </script>
+  <script>
+  document.getElementById("loginForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const username = document.getElementById("login-username").value.trim();
+    const password = document.getElementById("login-password").value.trim();
+    const message = document.getElementById("login-message");
+
+    if (username === "" || password === "") {
+      message.textContent = "Vui lòng nhập đầy đủ thông tin!";
+      message.className = "message error";
+      return;
+    }
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "../PHP/login.php", true); // chỉnh đúng đường dẫn login.php nếu khác thư mục
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        const response = xhr.responseText;
+        if (response.includes("Đăng nhập thành công!")) {
+          const parts = response.split("|");
+          message.textContent = parts[0];
+          message.className = "message success";
+
+          // Lưu LocalStorage
+          localStorage.setItem("userID", parts[1]);
+          localStorage.setItem("username", parts[2]);
+          localStorage.setItem("avatar", parts[3] && parts[3] !== "null" ? parts[3] : "../Image/avatar.jpg");
+          localStorage.setItem("cover", parts[4] && parts[4] !== "null" ? parts[4] : "../Image/anhbia.jpg");
+          localStorage.setItem("bio", parts[5]);
+          localStorage.setItem("displayName", parts[6]);
+          localStorage.setItem("role", parts[7]);
+
+          // Chuyển trang hoặc reload
+          setTimeout(() => {
+            window.location.href = "TrangChu.html"; // Thay link bằng trang chính của bạn
+          }, 1000);
+        } else {
+          message.textContent = response;
+          message.className = "message error";
+        }
+      }
+    };
+    xhr.send(`username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`);
+  });
+</script>
+<script>
+  document.getElementById("backToLogin").addEventListener("click", function(e) {
+  e.preventDefault();
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById("login").classList.add('active');
+});
+</script>
+<script>
+  document.getElementById("showForgot").addEventListener("click", function(e) {
+    e.preventDefault();
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById("forgotForm").classList.add('active');
+  });
+
+  document.getElementById("forgot-password-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const email = document.getElementById("forgot-email").value.trim();
+    const message = document.getElementById("forgot-message");
+
+    if (email === "") {
+      message.textContent = "Vui lòng nhập email.";
+      message.className = "message error";
+      return;
+    }
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "../PHP/forgot.php", true); // Chỉnh đường dẫn nếu cần
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        message.textContent = xhr.responseText;
+        if (xhr.responseText.includes("Mật khẩu cũ")) {
+          message.className = "message success";
+        } else {
+          message.className = "message error";
+        }
+      } else {
+        message.textContent = "Lỗi server!";
+        message.className = "message error";
+      }
+    };
+    xhr.send("email=" + encodeURIComponent(email));
+  });
+</script>
+</body>
+</html>

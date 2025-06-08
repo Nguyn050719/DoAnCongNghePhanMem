@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Quản Lý Truyện</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      background-color: #0f172a;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 30px;
+    }
+
+    h2 {
+      color: #60a5fa;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #1e293b;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #334155;
+    }
+
+    th {
+      background-color: #1e40af;
+    }
+
+    tr:hover {
+      background-color: #2c3e50;
+    }
+
+    .btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-danger {
+      background-color: #ef4444;
+      color: white;
+    }
+
+    .thumbnail {
+      width: 60px;
+      height: 80px;
+      border-radius: 6px;
+      object-fit: cover;
+    }
+
+    .flex {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .message {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>Danh sách truyện</h2>
+  <div class="message" id="message"></div>
+  <table>
+    <thead>
+      <tr>
+        <th>Ảnh bìa</th>
+        <th>Tiêu đề</th>
+        <th>Tác giả</th>
+        <th>Trạng thái</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody id="comicTable"></tbody>
+  </table>
+
+  <script>
+    fetch("../PHP/getProfile.php")
+      .then(res => res.json())
+      .then(data => {
+        if (!data.success || data.role !== "admin") {
+          alert("Bạn không có quyền truy cập!");
+          window.location.href = "TrangChu.html";
+        } else {
+          taiDanhSachTruyen();
+        }
+      });
+
+    function taiDanhSachTruyen() {
+      fetch("../PHP/getManga.php")
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.getElementById("comicTable");
+          tbody.innerHTML = "";
+
+          data.forEach(truyen => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td><img src="${truyen.COVER_IMAGE}" class="thumbnail" /></td>
+              <td>${truyen.TITLE}</td>
+              <td>${truyen.AUTHOR ?? "Không rõ"}</td>
+              <td>${truyen.STATUS ?? "Đang cập nhật"}</td>
+              <td>
+                <button class="btn btn-danger" onclick="xoaTruyen('${truyen.COMIC_ID}')">Xóa</button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        });
+    }
+
+    function xoaTruyen(comicId) {
+      if (!confirm("Bạn có chắc muốn xóa truyện này?")) return;
+
+      fetch("../PHP/deleteComic.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comic_id: comicId })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("message").textContent = data.success ? "Xóa thành công." : "Xóa thất bại.";
+        taiDanhSachTruyen();
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Lỗi khi kết nối server.");
+      });
+    }
+  </script>
+</body>
+</html>

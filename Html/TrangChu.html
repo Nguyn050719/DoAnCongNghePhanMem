@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CManga - Trang Cá nhân</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="../Css/trangchu.css">
+    
+  </head>
+<body>
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <i class="fas fa-bars menu-icon" id="menu-toggle"></i>
+      <div class="logo">CMANGA</div>
+    </div>
+    <div class="top-bar-right">
+      <div class="search-box">
+        <input type="text" placeholder="Tìm kiếm">
+        <button class="search-button"><i class="fas fa-search"></i></button>
+      </div>
+      <div class="login-icon" id="login-icon">
+        <img id="avatarTopRight" src="" style="display: none;" />
+      </div>
+      <div class="user-menu" id="user-menu">
+        <a href="DuyetBai.html" id="duyet-bai-link"><i class="fas fa-star"></i> Duyệt bài</a>
+        <a href="CapQuyen.html" id="cap-quyen-link"><i class="fas fa-star"></i> Cấp quyền</a>
+        <a href="QuanLyTruyen.html" id="quan-ly-link"><i class="fas fa-tools"></i> Quản lý truyện</a>
+        <a href="UpTruyen.html" id="upload-link"><i class="fas fa-tools"></i>Đăng truyện</a>
+        <a href="#"><i class="fas fa-bell"></i> Thông báo</a>
+        <a href="TrangCaNhan.html"><i class="fas fa-user"></i> Trang cá nhân</a>
+        <a href="#"><i class="fas fa-bookmark"></i> Theo dõi</a>
+        <a href="LichSu.html"><i class="fas fa-history"></i> Đã đọc</a>
+        <a href="#" id="logout"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
+      </div>
+    </div>
+  </div>
+  <div class="content">
+    <div class="khung-banner"><div class="banner" id="banner"></div></div>
+
+    <div class="container-fluid">
+      <div class="row">
+        <main class="col-md-10 noi-dung-chinh">
+          <div class="noi-dung-trung-tam">
+            <div class="hop-noi-bat">
+              <a id="link-noi-bat" href="#"><img class="anhNoiDung" id="anhNoiDung" src="" alt="Poster"></a>
+              <div class="noi-dung-noi-bat">
+                <a id="link-tieu-de" href="#" style="text-decoration: none; color: white;">
+                  <h2 id="tieu-de-noi-bat" style="text-decoration: none;"></h2></a>
+                <div id="the-loai-noi-bat"></div>
+                <p class="mo-ta-noi-bat" id="mo-ta-noi-bat" style="display: none;"></p>
+                <div class="chan-noi-bat">
+                  <span id="so-thu-tu-noi-bat">NO.1</span>
+                  <div><button onclick="bannerTruoc()">❮</button><button onclick="bannerSau()">❯</button></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="khung-lua-chon-truyen mt-4">
+              <div class="tab-loc-wrapper">
+                <div style="overflow-x: auto;">
+                  <ul class="nav nav-tabs" id="tabTruyen" role="tablist">
+                    <li class="nav-item"><button class="nav-link active" data-tab="tat-ca" type="button">Tất cả</button></li>
+                    <li class="nav-item"><button class="nav-link" data-tab="moi-cap-nhat" type="button">Mới cập nhật</button></li>
+                    <li class="nav-item"><button class="nav-link" data-tab="noi-bat" type="button">Truyện nổi bật</button></li>
+                  </ul>
+                </div>
+                <div class="che-do-xem-bo-loc-right">
+    <select class="bo-loc-the-loai">
+      <option value="tatca">Lọc thể loại</option>
+    </select>
+  </div>
+              </div>
+              <div class="tab-content bg-dark border rounded-bottom">
+                <div class="tab-pane show active">
+                  <div class="danh-sach-truyen" id="danh-sach-moi-cap-nhat"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+</div>
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+
+    let allTruyen = [];
+
+fetch('../PHP/getManga.php')
+  .then(res => res.json())
+  .then(data => {
+    allTruyen = data;
+    renderTruyen('tat-ca');
+    loadTruyenNoiBat(data);
+    capNhatBoLocTheLoai(data);
+  })
+  .catch(error => {
+    console.error('Lỗi load danh sách truyện:', error);
+  });
+    const menuToggle = document.getElementById("menu-toggle");
+    const sidebar = document.getElementById("sidebar");
+    const loginIcon = document.getElementById("login-icon");
+    const userMenu = document.getElementById("user-menu");
+    const avatarTopRight = document.getElementById("avatarTopRight");
+
+
+    // Hiển thị Sidebar
+    menuToggle?.addEventListener("click", () => {
+      sidebar.classList.toggle("active");
+    });
+
+    // Hiển thị User Menu khi nhấn avatar
+    loginIcon?.addEventListener("click", function (e) {
+      e.stopPropagation();
+      userMenu.style.display = (userMenu.style.display === "flex") ? "none" : "flex";
+    });
+
+    // Ẩn khi click ra ngoài
+    document.addEventListener("click", function (e) {
+      if (!userMenu.contains(e.target) && e.target !== loginIcon) {
+        userMenu.style.display = "none";
+      }
+    });
+
+    // Load avatar từ localStorage
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+    const avatar = localStorage.getItem("avatar");
+    if (isLoggedIn && avatar) {
+      avatarTopRight.src = avatar;
+      avatarTopRight.style.display = "block";
+      avatarTopRight.style.width = "40px";
+      avatarTopRight.style.height = "40px";
+      avatarTopRight.style.objectFit = "cover";
+      avatarTopRight.style.borderRadius = "50%";
+    }
+
+    // Hiển thị các menu theo quyền
+    const role = localStorage.getItem("role");
+    const duyetBaiLink = document.getElementById("duyet-bai-link");
+    const capQuyenLink = document.getElementById("cap-quyen-link");
+    const quanLyLink = document.getElementById("quan-ly-link");
+    const upLoadLink = document.getElementById("upload-link");
+
+    if (duyetBaiLink) duyetBaiLink.style.display = "none";
+    if (capQuyenLink) capQuyenLink.style.display = "none";
+    if (quanLyLink) quanLyLink.style.display = "none";
+    if (upLoadLink) upLoadLink.style.display = "none";
+
+    if (role === "admin") {
+      if (duyetBaiLink) duyetBaiLink.style.display = "flex";
+      if (quanLyLink) quanLyLink.style.display = "flex";
+    } else if (role === "user") {
+      if (capQuyenLink) capQuyenLink.style.display = "flex";
+    } else if (role === "author") {
+      if (upLoadLink) upLoadLink.style.display = "flex";
+    }
+
+    // Đăng xuất
+    document.getElementById("logout")?.addEventListener("click", function () {
+      localStorage.clear();
+      window.location.href = "DangNhap.html";
+    });
+
+    fetch("../PHP/getProfile.php")
+  .then(response => response.json())
+  .then(data => {
+    if (data.success && data.avatar) {
+      document.getElementById("avatarTopRight").src = data.avatar;
+      document.getElementById("avatarTopRight").style.display = "block";
+      localStorage.setItem("avatar", data.avatar);
+    }
+  })
+  .catch(err => console.error("Lỗi lấy thông tin profile:", err));
+
+  document.querySelectorAll('[data-tab]').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.nav-link').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const currentGenre = document.querySelector(".bo-loc-the-loai")?.value || 'tatca';
+        renderTruyen(tab.getAttribute('data-tab'), currentGenre);
+      });
+    });
+
+    function capNhatBoLocTheLoai(data) {
+      const select = document.querySelector(".bo-loc-the-loai");
+      if (!select) return;
+
+      const genresSet = new Set();
+      data.forEach(truyen => {
+        if (truyen.GENRE) {
+          truyen.GENRE.split(',').map(g => g.trim()).forEach(g => genresSet.add(g));
+        }
+      });
+
+      select.innerHTML = '<option value="tatca" disabled selected hidden> Lọc thể loại </option>';
+      Array.from(genresSet).sort().forEach(genre => {
+        const option = document.createElement("option");
+        option.value = genre;
+        option.textContent = genre;
+        select.appendChild(option);
+      });
+    }
+
+    function renderTruyen(loai, theLoai = 'tatca') {
+      const container = document.getElementById("danh-sach-moi-cap-nhat");
+      container.innerHTML = '';
+      const now = new Date();
+
+      const filtered = allTruyen.filter(truyen => {
+        if (loai === 'moi-cap-nhat') {
+          const update = new Date(truyen.LAST_UPDATE);
+          if ((now - update) / (1000 * 60 * 60) > 24) return false;
+        } else if (loai === 'noi-bat' && (truyen.VIEW ?? 0) <= 1000) {
+          return false;
+        }
+        if (theLoai !== 'tatca') {
+          return truyen.GENRE?.toLowerCase().includes(theLoai.toLowerCase());
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = "<p class='text-white'>Không có truyện phù hợp.</p>";
+        return;
+      }
+
+      filtered.forEach(truyen => {
+  const item = document.createElement("a");
+  item.className = "the-truyen";
+  item.href = `TrangTruyen.html?id=${truyen.COMIC_ID}`;
+  item.innerHTML = `
+    <img src="${truyen.COVER_IMAGE}" alt="${truyen.TITLE}">
+    <div class="thong-tin-truyen">
+      <div class="tieu-de">${truyen.TITLE}</div>
+      <div class="info-row">${truyen.CHAPTER_COUNT ?? 0} Chapter </div>
+      <div class="info-row">Trạng thái: ${truyen.STATUS ?? "Đang cập nhật"}</div>
+      <div class="meta">
+        <span><i class="fa-solid fa-bookmark"></i> ${truyen.FOLLOW_COUNT ?? 0}</span>
+        <span><i class="fa-solid fa-eye"></i> ${truyen.VIEW ?? 0}</span>
+      </div>
+    </div>`;
+
+  // ✅ Sửa tại đây
+  item.addEventListener("click", (e) => {
+    e.preventDefault();
+    localStorage.setItem("comic_id", truyen.COMIC_ID);
+    window.location.href = `TrangTruyen.html?id=${truyen.COMIC_ID}`;
+  });
+
+  container.appendChild(item);
+});
+    }
+
+    function loadTruyenNoiBat(data) {
+    const top3 = data
+      .filter(t => t.VIEW !== null)
+      .sort((a, b) => (b.VIEW ?? 0) - (a.VIEW ?? 0))
+      .slice(0, 3);
+
+    let currentIndex = 0;
+
+    function updateNoiBat(index) {
+      const truyen = top3[index];
+      if (!truyen) return;
+
+      document.getElementById("anhNoiDung").src = truyen.COVER_IMAGE;
+      document.getElementById("tieu-de-noi-bat").textContent = truyen.TITLE;
+      document.getElementById("link-noi-bat").href = `TrangTruyen.html?id=${truyen.COMIC_ID}`;
+      document.getElementById("link-tieu-de").href = `TrangTruyen.html?id=${truyen.COMIC_ID}`;
+      document.getElementById("so-thu-tu-noi-bat").textContent = `NO.${index + 1}`;
+
+      const genres = truyen.GENRE?.split(",") ?? [];
+      document.getElementById("the-loai-noi-bat").innerHTML = genres.map(g =>
+        `<a class="the-truyen-noi-bat">${g.trim()}</a>`).join("");
+
+      document.getElementById("mo-ta-noi-bat").style.display = "none";
+    }
+
+    window.bannerTruoc = () => {
+      currentIndex = (currentIndex - 1 + top3.length) % top3.length;
+      updateNoiBat(currentIndex);
+    };
+
+    window.bannerSau = () => {
+      currentIndex = (currentIndex + 1) % top3.length;
+      updateNoiBat(currentIndex);
+    };
+
+    updateNoiBat(currentIndex);
+  }
+
+  // ----- Lọc thể loại khi thay đổi dropdown -----
+  document.querySelector(".bo-loc-the-loai")?.addEventListener("change", (e) => {
+    const theLoai = e.target.value;
+    const tab = document.querySelector(".nav-link.active")?.getAttribute("data-tab") || 'tat-ca';
+    renderTruyen(tab, theLoai);
+  });
+
+  // ----- Format ngày cập nhật truyện: "2 ngày trước", "3 giờ trước",... -----
+  function formatTimeAgo(dateString) {
+    if (!dateString) return "";
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMin = Math.floor((now - date) / (1000 * 60));
+    if (diffMin < 60) return `${diffMin} phút trước`;
+    if (diffMin < 1440) return `${Math.floor(diffMin / 60)} giờ trước`;
+    return `${Math.floor(diffMin / 1440)} ngày trước`;
+  }
+  });
+</script>
+
+</body>
+</html>

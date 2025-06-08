@@ -1,0 +1,83 @@
+.manga-detail {
+    background-color: #101223;
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.manga-tags span {
+    background-color: #4b54c3;
+    color: white;
+    border-radius: 4px;
+    padding: 5px 10px;
+    margin: 3px;
+    display: inline-block;
+}
+
+.chapter-list table {
+    width: 100%;
+    color: white;
+    margin-top: 20px;
+}
+
+.chapter-list th, .chapter-list td {
+    border: 1px solid #2e2e3f;
+    padding: 10px;
+}
+
+.info-line {
+    background-color: #101223;
+    padding: 10px 15px;
+    border-radius: 10px;
+    margin-top: 10px;
+    color: white;
+}
+/* Tiêu đề truyện */
+.manga-title {
+    font-size: 26px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #ffffff;
+}
+
+/* Gọn gàng tag thể loại */
+.manga-tags {
+    margin-bottom: 10px;
+}
+
+.manga-tags span {
+    background-color: #6f7afc;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 14px;
+    margin: 4px 4px 4px 0;
+    display: inline-block;
+}
+
+/* Dòng thông tin như tình trạng, lượt xem, theo dõi */
+.info-line {
+    display: flex;
+    align-items: center;
+    font-size: 15px;
+    margin-bottom: 6px;
+    padding: 0;
+    background: none;
+}
+
+.info-line strong {
+    width: 100px;
+    color: #bbb;
+    font-weight: normal;
+}
+
+/* Các nút hành động */
+.manga-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 12px;
+}
+
+.manga-actions .btn {
+    padding: 8px 16px;
+    font-size: 15px;
+    border-radius: 8px;
+}

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xóa LocalStorage</title>
+  <style>
+    body {
+      background: #1c1c29;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
+    }
+    button {
+      background: #6c78ff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      margin-top: 20px;
+    }
+    button:hover {
+      background: #5a66e0;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <h1>Xóa LocalStorage</h1>
+    <p>Nhấn nút bên dưới để xóa toàn bộ dữ liệu LocalStorage.</p>
+    <button onclick="clearAll()">Xóa toàn bộ LocalStorage</button>
+    <p>Hoặc nhấn để xóa các key người dùng:</p>
+    <button onclick="clearUserData()">Xóa dữ liệu người dùng</button>
+  </div>
+
+  <script>
+    function clearAll() {
+      localStorage.clear();
+      alert("Đã xóa toàn bộ LocalStorage!");
+      location.reload();
+    }
+
+    function clearUserData() {
+      localStorage.removeItem("avatar");
+      localStorage.removeItem("cover");
+      localStorage.removeItem("displayName");
+      localStorage.removeItem("bio");
+      localStorage.removeItem("userID");
+      alert("Đã xóa các key người dùng!");
+      location.reload();
+    }
+  </script>
+</body>
+</html>

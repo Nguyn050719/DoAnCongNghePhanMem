@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Lịch sử đã đọc</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      background-color: #0f172a;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 30px;
+    }
+    h2 {
+      color: #60a5fa;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #1e293b;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #334155;
+    }
+    th {
+      background-color: #1e40af;
+    }
+    tr:hover {
+      background-color: #2c3e50;
+    }
+    .btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-read {
+      background-color: #10b981;
+      color: white;
+    }
+    .thumbnail {
+      width: 60px;
+      height: 80px;
+      border-radius: 6px;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
+  <h2>Lịch sử đọc truyện</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Ảnh bìa</th>
+        <th>Tiêu đề</th>
+        <th>Chương đã đọc</th>
+        <th>Thời gian đọc</th> <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody id="historyTable"></tbody>
+  </table>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const currentUser = JSON.parse(localStorage.getItem('loggedInUser')); // Lấy toàn bộ đối tượng user
+        const usesId = currentUser ? currentUser.USES_ID : null; // Lấy USES_ID từ đối tượng user
+
+        if (!usesId) {
+            document.getElementById("historyTable").innerHTML = "<tr><td colspan='5' style='text-align: center; color: #a0aec0;'>Bạn cần đăng nhập để xem lịch sử đọc.</td></tr>";
+            return;
+        }
+
+        // SỬA TẠI ĐÂY: Gọi getHistory.php thay vì saveHistory.php
+        fetch(`../PHP/getHistory.php?user_id=${usesId}`) // Sử dụng user_id để khớp với getHistory.php
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error('Network response was not ok ' + res.statusText);
+                }
+                return res.json();
+            })
+            .then(data => {
+                const tbody = document.getElementById("historyTable");
+                tbody.innerHTML = "";
+
+                if (data.length === 0) {
+                    tbody.innerHTML = "<tr><td colspan='5' style='text-align: center; color: #a0aec0;'>Chưa có lịch sử đọc nào.</td></tr>";
+                    return;
+                }
+
+                data.forEach(item => {
+                    const tr = document.createElement("tr");
+                    const readAtDate = new Date(item.read_at);
+                    const formattedReadAt = readAtDate.toLocaleString('vi-VN', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                    tr.innerHTML = `
+                        <td><img src="${item.COVER_IMAGE}" class="thumbnail" /></td>
+                        <td>${item.COMIC_TITLE}</td>
+                        <td>Chương ${item.CHAPTER_NUMBER} - ${item.CHAPTER_TITLE || ''}</td>
+                        <td>${formattedReadAt}</td> <td>
+                            <a href="TrangDocTruyen.html?comic_id=${item.comic_id}&chapter_number=${item.CHAPTER_NUMBER}" class="btn btn-read">Tiếp tục đọc</a>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching reading history:', error);
+                document.getElementById("historyTable").innerHTML = `<tr><td colspan='5' style='text-align: center; color: red;'>Lỗi khi tải lịch sử đọc: ${error.message}</td></tr>`;
+            });
+    });
+  </script>
+</body>
+</html>

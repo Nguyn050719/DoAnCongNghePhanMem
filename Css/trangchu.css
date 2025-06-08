@@ -1,0 +1,530 @@
+body {
+      margin: 0;
+      padding: 0;
+      background-color: #1c1c29;
+      color: white;
+      font-family: 'Arial', sans-serif;
+    }
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(47, 52, 73, 0.8);
+      z-index: 1000;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    .top-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .menu-icon {
+      font-size: 22px;
+      cursor: pointer;
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      color: #6f7afc;
+    }
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      position: relative;
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      background-color: #4a5168;
+      border-radius: 7px;
+      padding: 5px 10px;
+    }
+    .search-box input {
+      border: none;
+      background: none;
+      outline: none;
+      color: white;
+      font-size: 16px;
+      padding: 5px;
+      width: 150px;
+    }
+    .search-button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      margin-left: 5px;
+    }
+    .login-icon img {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 2px solid white;
+      cursor: pointer;
+    }
+    .user-menu {
+      position: absolute;
+      top: 60px;
+      right: 0;
+      background-color: #2e3240;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      overflow: hidden;
+      display: none;
+      flex-direction: column;
+      min-width: 220px;
+      padding: 10px 0;
+      z-index: 1001;
+    }
+    .user-menu a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      color: #ccc;
+      text-decoration: none;
+      transition: background 0.3s, color 0.3s;
+      border-radius: 8px;
+      margin: 0 10px;
+    }
+    .user-menu a:hover {
+      background-color: #6f7afc;
+      color: white;
+    }
+    @keyframes fadeIn {
+  from {
+      opacity: 0;
+      transform: translateY(-10px);
+  }
+
+  to {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+
+.content {
+  margin-top: 80px;
+  padding: 20px;
+}
+
+  /* ======= HÌNH NỀN CHUYỂN ĐỘNG (BANNER) ======= */
+  .khung-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 62vh;
+    overflow: hidden;
+    z-index: -1;
+  }
+
+  .khung-banner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to top, #1c1c29, transparent);
+    z-index: 1;
+  }
+
+  .banner {
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    animation: chuyenDongBanner 60s linear infinite;
+    filter: blur(4px);
+  }
+
+  @keyframes chuyenDongBanner {
+    0% { background-position: 0 0; }
+    100% { background-position: -2000px 0; }
+  }
+
+  /* ======= THANH BÊN TRÁI (Sidebar) ======= */
+  .thanh-ben {
+    background-color: #0b0f1a;
+    width: 240px;
+    height: 100vh;
+    padding: 30px 20px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999;
+    overflow-y: auto;
+  }
+
+  .thanh-ben a {
+    color: white;
+    text-decoration: none;
+    display: block;
+    margin: 15px 0;
+    font-size: 1.05rem;
+    font-weight: 500;
+  }
+
+  .thanh-ben a:hover {
+    background-color: #1a1e2d;
+    padding-left: 10px;
+    border-radius: 5px;
+    transition: all 0.2s ease;
+  }
+
+  /* ======= KHUNG CHỨA NỘI DUNG CHÍNH (MAIN CONTAINER) ======= */
+  
+  .sidebar.active ~ .content {
+    margin-left: 250px; /* Bằng chiều rộng sidebar */
+    transition: margin-left 0.4s ease;
+}
+
+.content {
+    margin-left: 0;
+    transition: margin-left 0.4s ease;
+}
+
+  .noi-dung-chinh {
+    margin: 0 auto;
+  }
+
+  .container-fluid {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  /* ======= HỘP TRUYỆN NỔI BẬT (TOP STORY) ======= */
+  .hop-noi-bat {
+    background-color: rgba(0, 0, 0, 0.75);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    backdrop-filter: blur(3px);
+    padding: 30px;
+    border-radius: 15px;
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 auto;
+  }
+
+  .anhNoiDung {
+    width: 200px;
+    border-radius: 10px;
+  }
+
+  .noi-dung-noi-bat {
+    flex: 1;
+  }
+
+  .noi-dung-noi-bat h2 {
+    font-size: 3rem;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+
+  .mo-ta-noi-bat {
+    font-size: 1.1rem;
+    color: #cccccc;
+    margin: 10px 0;
+  }
+
+  .the-truyen-noi-bat {
+    display: inline-block;
+    background-color: #5b67b5;
+    color: white;
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-radius: 5px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+    text-decoration: none;
+    flex: 0 0 calc(50% - 15px);
+    max-width: 100%;
+  }
+
+  .the-truyen-noi-bat:hover {
+    background-color: #1f2533;
+  }
+
+  .chan-noi-bat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    gap: 20px;
+  }
+
+  .chan-noi-bat span {
+    font-weight: bold;
+    font-size: 1rem;
+  }
+
+  .chan-noi-bat button {
+    font-size: 1rem;
+    width: 35px;
+    height: 35px;
+    line-height: 1;
+    background: none;
+    border: 1px solid white;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  /* ======= DANH SÁCH TRUYỆN (Cards/List) ======= */
+  .danh-sach-truyen {
+     display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+    gap: 20px;
+    padding: 10px;
+  }
+
+  .the-truyen {
+  display: flex;
+  align-items: center;
+  background-color: #1e2238;
+  border-radius: 12px;
+  padding: 10px;
+  color: white;
+  text-decoration: none;
+  transition: background 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.the-truyen:hover {
+  background-color: #2a2f47;
+}
+/* Trên màn hình nhỏ thì full chiều ngang */
+@media only screen and (max-width: 768px) {
+  .the-truyen {
+    flex: 0 0 100%;
+  }
+}
+
+.the-truyen img {
+  width: 80px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-right: 14px;
+}
+  .the-truyen:hover {
+    background-color: #3a3f50;
+  }
+
+  .anh-bia-truyen {
+    width: 70px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 5px;
+    margin-right: 15px;
+  }
+
+  .thong-tin-truyen {
+    display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-left: 15px;
+  flex: 1;
+  }
+
+  .thong-tin-truyen h3 {
+    margin: 0;
+    font-size: 16px;
+  }
+
+  .thong-tin-bo-sung {
+    font-size: 0.85rem;
+    color: #aaa;
+    line-height: 1.4;
+  }
+
+  /* ======= TABS CHUYỂN TRANG (MỚI - NỔI BẬT - BXH) ======= */
+
+  .nav-tabs {
+     overflow-x: auto;
+  overflow-y: hidden; /* Ẩn thanh trượt dọc */
+  white-space: nowrap;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  scrollbar-width: thin;
+  scrollbar-color: #6f7afc transparent;
+  }
+
+  .nav-tabs .nav-item {
+    margin-bottom: 0;
+  }
+
+  .nav-tabs .nav-link {
+    font-size: 1.1rem;
+    padding: 12px 24px;
+    min-width: 160px;
+    text-align: center;
+    border-radius: 8px 8px 0 0;
+    margin-bottom: -1px;
+    color: white;
+  }
+
+  .tab-content {
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+  }
+
+  .khung-lua-chon-truyen {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    width: 100%;
+    margin-top: 40px;
+    box-sizing: border-box;
+  }
+
+  .noi-dung-trung-tam {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 20px;
+    margin-bottom: 60px;
+  }
+
+  .che-do-xem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding: 0 10px;
+  }
+
+  .nut-chuyen {
+    background-color: #6f7afc;
+    border: none;
+    color: white;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background-color 0.3s;
+  }
+
+  .nut-chuyen i {
+  font-size: 1.2rem;
+}
+  
+  .nut-chuyen:hover {
+    background-color: #8895f7;
+  }
+
+  .che-do-danh-sach .the-truyen {
+    flex: 1 1 100%;
+    max-width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 15px;
+  }
+
+  .che-do-danh-sach .thong-tin-truyen {
+    margin-left: 20px;
+  }
+
+  .che-do-danh-sach .thong-tin-bo-sung {
+    color: #aaa;
+    font-size: 0.9rem;
+    margin-top: 4px;
+  }
+
+    /* =======  ======= */
+
+    .tab-loc-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding: 0 10px;
+    }
+    
+    .che-do-xem-bo-loc-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .bo-loc-the-loai {
+      background-color: #2e3240;
+      color: white;
+      border: 1px solid #6f7afc;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.95rem;
+      outline: none;
+      cursor: pointer;
+    }
+    
+  /* ======= PHẦN KẾT TRANG (FOOTER) ======= */
+  
+.tieu-de {
+  font-size: 1.5rem; /* 👈 tăng kích thước */
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: white;
+}
+
+  /* ======= PHẦN KẾT TRANG (FOOTER) ======= */
+  footer {
+    background-color: #111;
+    color: #ccc;
+    padding: 100px 20px 40px;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-top: 30px;
+    border-top: 8px solid #1c1c29;
+  }
+
+  footer .footer-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 30px;
+  }
+
+  footer h4 {
+    color: white;
+    margin-bottom: 15px;
+    font-size: 16px;
+  }
+
+  footer a {
+    color: #ccc;
+    text-decoration: none;
+  }
+
+  footer a:hover {
+    color: #fff;
+  }
+
+  footer .footer-bottom {
+    margin-top: 30px;
+    border-top: 1px solid #333;
+    padding-top: 15px;
+    text-align: center;
+    font-size: 13px;
+  }
+
+#duyet-bai-link,
+#cap-quyen-link {
+  display: none;
+}
