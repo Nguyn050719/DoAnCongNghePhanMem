@@ -211,7 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
         row.addEventListener("click", () => {
         const chapterId = row.getAttribute("data-id");
         localStorage.setItem("selected_chapter_id", chapterId);
-        window.location.href = `TrangDocTruyen.html?comic_id=${comicId}&chapter_number=${chapterId}`;
+        window.location.href = `TrangDocTruyen.html?comic_id=${comicId}&chapter_id=${chapterId}`;
 });
         });
       }

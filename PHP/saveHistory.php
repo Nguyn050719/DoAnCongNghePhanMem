@@ -7,7 +7,7 @@ error_reporting(E_ALL);
 $servername = "localhost";
 $username = "root";
 $password = "";
-$dbname = "webtruyen_1";
+$dbname = "webtruyen";
 
 // Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);

@@ -1,19 +1,19 @@
 
-// Các hàm tiện ích
 function getUrlParam(name) {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get(name);
 }
 
 const API_BASE_URL = 'http://localhost/Webtruyen_3/PHP';
-let currentUser = null; // Sẽ lưu thông tin người dùng đã đăng nhập (userId, username, role)
-let currentComicTitle = ''; // Thêm biến global mới cho tên truyện
+let currentUser = null; 
+let currentComicTitle = '';
 let currentChapterNumber;
 let totalChapters = 0;
 let currentChapterTitle = '';
-let currentChapterId = null; // THÊM BIẾN TOÀN CỤC NÀY
+let chapterIdsSorted = []; 
+const currentComicId = getUrlParam('comic_id');
+let currentChapterId = getUrlParam('chapter_id'); 
 
-// --- Logic Xử lý lỗi & Timeout ---
 const errorMessage = document.getElementById('error-message');
 let loadTimeout;
 let brokenImageCount = 0;
@@ -38,13 +38,6 @@ function hideErrorMessage() {
     }
 }
 
-// --- CÁC HÀM XỬ LÝ TRẠNG THÁI ĐĂNG NHẬP MỚI/CẬP NHẬT ---
-
-/**
- * Hàm lấy thông tin profile người dùng từ server.
- * Cập nhật biến currentUser và localStorage nếu thành công.
- * Đây là hàm bù đắp cho việc DangNhap.html không lưu đúng.
- */
 async function fetchUserProfileFromServer() {
     try {
         const response = await fetch(`${API_BASE_URL}/getProfile.php`);
@@ -79,10 +72,6 @@ async function fetchUserProfileFromServer() {
     }
 }
 
-/**
- * Kiểm tra trạng thái đăng nhập của người dùng.
- * Sẽ luôn thử lấy từ server nếu loggedInUser không có.
- */
 async function checkLoginStatus() {
     const storedUser = localStorage.getItem('loggedInUser');
     const storedRole = localStorage.getItem('role'); // Sẽ tồn tại nếu DangNhap.html lưu nó
@@ -105,9 +94,6 @@ async function checkLoginStatus() {
         }
     } 
     
-    // Nếu loggedInUser vẫn là null (do DangNhap.html không lưu đúng)
-    // Hoặc nếu quá trình parse/fetchUserProfileFromServer trước đó thất bại
-    // Và nếu có dấu hiệu người dùng đã đăng nhập (ví dụ: role vẫn còn trong localStorage)
     if (currentUser === null) {
         console.warn("currentUser rỗng. Đang cố gắng lấy profile từ server để xác định trạng thái đăng nhập.");
         await fetchUserProfileFromServer(); // Luôn thử fetch từ server
@@ -118,12 +104,7 @@ async function checkLoginStatus() {
 }
 
 
-/**
- * Cập nhật giao diện người dùng dựa trên trạng thái đăng nhập của currentUser.
- */
 function updateUIForLoginStatus() {
-    // const loginIcon = document.getElementById('login-icon'); // Không còn cần thiết để điều khiển display của login-icon
-    // const avatarImg = document.getElementById('avatar-img'); // Đây là id cũ, không dùng nữa
     const loginName = document.getElementById('login-name'); // Nơi hiển thị tên/tên đăng nhập
     const profileLink = document.getElementById('profile-link'); // Thẻ <a> để liên kết đến trang cá nhân
     const avatarTopRight = document.getElementById('avatarTopRight'); // Lấy thẻ img có id="avatarTopRight"
@@ -186,9 +167,6 @@ function logoutUser() {
 
 function hideLoginModal() {
     console.log('Hiding login modal...');
-    // Thêm logic để ẩn modal của bạn tại đây, ví dụ:
-    // document.getElementById('loginModal').style.display = 'none';
-    // Hoặc remove class 'active' khỏi modal
 }
 
 function updateLoginIcon() {
@@ -363,10 +341,6 @@ const commentCountFooterSpan = document.getElementById('comment-count-footer');
 const sortLabel = document.getElementById('sort-label');
 const sortOptionsContainer = document.querySelector('.sort-options');
 
-const currentComicId = getUrlParam('comic_id');
-// currentChapterIdurl không còn được dùng trực tiếp cho saveHistory nữa, nhưng vẫn có thể dùng để lấy chapter_number ban đầu
-const currentChapterIdurl = getUrlParam('chapter_number');
-
 
 const SORT_OPTIONS = {
     'newest': 'Mới nhất',
@@ -385,36 +359,75 @@ function updateCommentCountDisplay(count) {
     }
 }
 
+const storedUserId = localStorage.getItem('user_id');   // Key bạn dùng để lưu ID người dùng
+const storedUserRole = localStorage.getItem('user_role'); // Key bạn dùng để lưu vai trò (ví dụ: 'admin', 'user')
+
+if (storedUserId && storedUserRole) {
+    currentUser = {
+        USES_ID: storedUserId,
+        ROLE: storedUserRole
+    };
+} else {
+    // Console log để debug nếu thông tin người dùng không có trong localStorage
+    console.log("Người dùng chưa đăng nhập hoặc thông tin không có trong localStorage.");
+    // Bạn có thể thêm logic để chuyển hướng đến trang đăng nhập nếu cần
+}
+
+
 async function displayComments() {
-    if (!commentsList || !currentComicId) {
+    // Đảm bảo các phần tử DOM và ID cần thiết đã có
+    if (!commentsList || !currentComicId) { // Đã bỏ currentChapterId vì API GET comment không dùng nữa
         console.warn('Element #comments-list not found or comicId missing. Cannot display comments.');
+        // Hiển thị thông báo lỗi thân thiện cho người dùng
+        if (commentsList) {
+            commentsList.innerHTML = '<p style="text-align: center; color: #a0aec0;">Không thể tải bình luận (thiếu thông tin truyện).</p>';
+        }
         return;
     }
+
     commentsList.innerHTML = '<p style="text-align: center; color: #a0aec0;">Đang tải bình luận...</p>';
+
     try {
+        // API GET comment của bạn không cần chapterID nữa, theo file PHP bạn cung cấp
         const response = await fetch(`${COMMENTS_API_URL}?comicId=${currentComicId}&sort=${currentSortOrder}`);
+
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Không thể tải bình luận.');
+            const errorData = await response.json(); // Cố gắng đọc lỗi từ JSON
+            throw new Error(errorData.message || 'Không thể tải bình luận từ server.');
         }
-        const comments = await response.json();
-        commentsList.innerHTML = '';
-        if (comments.length === 0) {
+
+        const responseData = await response.json();
+
+        // Vẫn đảm bảo rằng responseData.comments tồn tại và là mảng
+        const comments = responseData.comments;
+
+        commentsList.innerHTML = ''; // Xóa thông báo "Đang tải"
+
+        // Kiểm tra xem 'comments' có phải là mảng và có rỗng không
+        if (!Array.isArray(comments) || comments.length === 0) {
+            // Nếu không phải mảng hoặc mảng rỗng, hiển thị thông báo không có bình luận
             commentsList.innerHTML = '<p style="text-align: center; color: #a0aec0;">Chưa có bình luận nào. Hãy là người đầu tiên bình luận!</p>';
         } else {
+            // Nếu có bình luận, duyệt qua từng bình luận và hiển thị
             comments.forEach(comment => {
                 const commentItem = document.createElement('div');
                 commentItem.classList.add('comment-item');
-                commentItem.dataset.id = comment.COMMENT_ID;
+                commentItem.dataset.id = comment.COMMENT_ID; // Lưu ID bình luận vào dataset
+
+                // Định dạng ngày giờ
                 const date = new Date(comment.CREATE_AT);
                 const formattedDate = date.toLocaleString('vi-VN', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-                // Kiểm tra currentUser để xác định quyền xóa
-                const canDelete = currentUser && (currentUser.ROLE === 'admin' || currentUser.USES_ID == comment.USES_ID); // Sử dụng == để so sánh số/chuỗi
+                // Logic hiển thị nút xóa:
+                // `currentUser` phải tồn tại (đã đăng nhập) VÀ
+                // (vai trò của `currentUser` là 'admin' HOẶC ID của `currentUser` trùng với ID tác giả bình luận)
+                const canDelete = currentUser && (currentUser.ROLE === 'admin' || currentUser.USES_ID == comment.USES_ID);
                 let deleteButtonHTML = '';
                 if (canDelete) {
                     deleteButtonHTML = `<button class="delete-comment" data-id="${comment.COMMENT_ID}">Xóa</button>`;
                 }
+
+                // Đặt nội dung HTML cho bình luận
                 commentItem.innerHTML = `
                     <div class="comment-header">
                         <img src="${comment.AuthorAvatar}" alt="Avatar" class="comment-avatar">
@@ -426,8 +439,10 @@ async function displayComments() {
                         ${deleteButtonHTML}
                     </div>
                 `;
-                commentsList.appendChild(commentItem);
+                commentsList.appendChild(commentItem); // Thêm bình luận vào danh sách
             });
+
+            // Gán sự kiện click cho các nút xóa bình luận (sau khi chúng đã được tạo)
             document.querySelectorAll('.delete-comment').forEach(button => {
                 button.addEventListener('click', async (e) => {
                     const commentIdToDelete = e.target.dataset.id;
@@ -438,14 +453,20 @@ async function displayComments() {
                                 headers: {
                                     'Content-Type': 'application/json',
                                 },
-                                body: JSON.stringify({ comment_id: commentIdToDelete })
+                                body: JSON.stringify({
+                                    comment_id: commentIdToDelete,
+                                    // Gửi user_id và role từ biến currentUser đã được khởi tạo từ localStorage
+                                    uses_id: currentUser ? currentUser.USES_ID : null,
+                                    role: currentUser ? currentUser.ROLE : null
+                                })
                             });
                             const data = await response.json();
-                            if (response.ok) {
+                            if (response.ok) { // Kiểm tra mã trạng thái HTTP 2xx
                                 alert(data.message);
-                                displayComments();
-                            } else {
+                                displayComments(); // Tải lại bình luận sau khi xóa thành công
+                            } else { // Xử lý các lỗi từ server (mã trạng thái 4xx, 5xx)
                                 alert('Lỗi: ' + data.message);
+                                console.error('Phản hồi lỗi từ server:', data);
                             }
                         } catch (error) {
                             console.error('Lỗi khi xóa bình luận:', error);
@@ -455,7 +476,8 @@ async function displayComments() {
                 });
             });
         }
-        updateCommentCountDisplay(comments.length);
+        // Cập nhật số lượng bình luận hiển thị
+        updateCommentCountDisplay(Array.isArray(comments) ? comments.length : 0);
     } catch (error) {
         console.error('Lỗi khi tải bình luận:', error);
         if (commentsList) {
@@ -464,44 +486,62 @@ async function displayComments() {
     }
 }
 
+// Xử lý gửi bình luận (đã điều chỉnh để phù hợp với currentUser và lược bỏ chapter_id khỏi API)
 if (submitCommentIconButton) {
     submitCommentIconButton.addEventListener('click', async () => {
+        // Kiểm tra xem người dùng đã đăng nhập chưa thông qua currentUser
         if (!currentUser || !currentUser.USES_ID) {
             alert('Bạn cần đăng nhập để bình luận.');
             return;
         }
-        const text = commentTextInput.value.trim();
-        if (text) {
-            try {
-                const response = await fetch(COMMENTS_API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        content: text,
-                        comic_id: currentComicId
-                    })
-                });
-                const data = await response.json();
-                if (response.ok) {
-                    alert(data.message);
-                    commentTextInput.value = '';
-                    displayComments();
-                } else {
-                    alert('Lỗi: ' + data.message);
-                }
-            } catch (error) {
-                console.error('Lỗi khi gửi bình luận:', error);
-                alert('Đã xảy ra lỗi khi kết nối với server để gửi bình luận.');
-            }
-        } else {
+
+        const commentText = commentTextInput.value.trim();
+        if (!commentText) {
             alert('Vui lòng nhập nội dung bình luận.');
+            return;
+        }
+
+        // Đảm bảo có comic_id
+        if (!currentComicId) { // Đã loại bỏ chapterID khỏi API POST comment của bạn
+            console.error('Lỗi: Thiếu comic_id. Không thể gửi bình luận.');
+            alert('Lỗi khi gửi bình luận: Thiếu thông tin truyện.');
+            return;
+        }
+
+        try {
+            const payload = {
+                content: commentText,
+                comic_id: currentComicId,
+                uses_id: currentUser.USES_ID // Đã sửa tên trường thành uses_id để khớp với PHP
+            };
+
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+
+            const response = await fetch(COMMENTS_API_URL, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) { // Giả định server trả về {success: true, message: "..."}
+                alert(data.message);
+                commentTextInput.value = ''; // Xóa nội dung input
+                displayComments(); // Tải lại bình luận
+            } else {
+                alert('Lỗi: ' + (data.message || 'Lỗi không xác định từ server.'));
+                console.error('Phản hồi lỗi từ server:', data);
+            }
+        } catch (error) {
+            console.error('Lỗi khi gửi bình luận:', error);
+            alert('Đã xảy ra lỗi khi kết nối với server để gửi bình luận.');
         }
     });
 }
 
-// HÀM MỚI: LƯU LỊCH SỬ ĐỌC
 async function saveReadingHistory() {
     // Đảm bảo có currentUser và comicId, currentChapterId trước khi lưu
     if (!currentUser || !currentUser.USES_ID) {
@@ -537,17 +577,21 @@ async function saveReadingHistory() {
 
 // Hàm tải dữ liệu chapter và pages
 async function fetchChapterData() {
-    try {
-        const comicId = getUrlParam('comic_id');
-        if (!comicId) {
-            document.getElementById('comicChapterHeading').textContent = 'Không tìm thấy ID truyện.';
-            console.error('comic_id not found in URL.');
-            showErrorMessage();
-            return;
-        }
+    clearTimeout(loadTimeout); 
+    hasCriticalErrorOccurred = false; 
+    hideErrorMessage(); 
 
-        // Fetch comic title first
-        const comicTitleResponse = await fetch(`${API_BASE_URL}/getComicDetailsTrangDoc.php?comic_id=${comicId}`);
+    if (!currentComicId || !currentChapterId) { 
+        console.log(currentComicId, currentChapterId);
+        document.getElementById('comicChapterHeading').textContent = 'Không tìm thấy ID truyện hoặc ID chương.';
+        console.error('comic_id or chapter_id not found in URL.');
+        showErrorMessage();
+        return;
+    }
+
+    try {
+        // Fetch comic title (không thay đổi)
+        const comicTitleResponse = await fetch(`${API_BASE_URL}/getComicDetailsTrangDoc.php?comic_id=${currentComicId}`);
         if (!comicTitleResponse.ok) {
             const errorData = await comicTitleResponse.json();
             throw new Error(errorData.message || 'Không thể tải thông tin truyện.');
@@ -555,60 +599,61 @@ async function fetchChapterData() {
         const comicTitleData = await comicTitleResponse.json();
         if (comicTitleData.success && comicTitleData.title) {
             currentComicTitle = comicTitleData.title;
+            document.getElementById('comicChapterHeading').textContent = comicTitleData.title;
+            document.getElementById('chapterPageTitle').textContent = comicTitleData.title;
         } else {
             console.warn('Failed to load comic title or no title found.');
             currentComicTitle = 'Không tìm thấy tên truyện';
         }
 
-        // Fetch chapter info
-        const chapterInfoResponse = await fetch(`${API_BASE_URL}/getComicChapterInfoTrangDoc.php?comic_id=${comicId}&chapter_number=${currentChapterNumber}`);
+        // Fetch chapter info và danh sách chapter_id_sorted
+        // Endpoint này cần trả về thông tin chương hiện tại và MẢNG chapter_id đã sắp xếp của toàn bộ truyện
+        const chapterInfoResponse = await fetch(`${API_BASE_URL}/getComicChapterInfoTrangDoc.php?comic_id=${currentComicId}&chapter_id=${currentChapterId}`); 
         if (!chapterInfoResponse.ok) {
             const errorData = await chapterInfoResponse.json();
             throw new Error(errorData.message || 'Không thể tải thông tin chapter.');
         }
         const chapterInfoData = await chapterInfoResponse.json();
         console.log('Chapter Info Data received by JS:', chapterInfoData);
+
         if (chapterInfoData.success && chapterInfoData.data) {
             const info = chapterInfoData.data;
             totalChapters = info.total_chapters;
             currentChapterTitle = info.chapter_title;
-            currentChapterId = info.CHAPTER_ID; // THÊM DÒNG NÀY ĐỂ LẤY CHAPTER_ID
+            currentChapterNumber = info.CHAPTER_NUMBER; // Lấy chapter number từ API
+
+            // Cập nhật biến toàn cục chapterIdsSorted từ API
+            if (Array.isArray(info.chapter_ids_sorted)) {
+                chapterIdsSorted = info.chapter_ids_sorted;
+                console.log("Danh sách chapter ID đã tải:", chapterIdsSorted);
+            } else {
+                console.warn("Dữ liệu chapter_ids_sorted không phải là mảng hoặc thiếu từ API.");
+                chapterIdsSorted = []; 
+            }
 
             updateChapterNumbersDisplay();
-
-            const chapterPageTitleElement = document.getElementById('chapterPageTitle');
-            if (chapterPageTitleElement) {
-                chapterPageTitleElement.textContent = `${currentComicTitle} - ${currentChapterTitle} - Chapter ${currentChapterNumber}`;
-            }
-
-            const comicChapterHeading = document.getElementById('comicChapterHeading');
-            if (comicChapterHeading) {
-                comicChapterHeading.textContent = `${currentComicTitle} - Chapter ${currentChapterNumber}`;
-            }
-
             updateNavigationButtons();
-
-            // GỌI HÀM LƯU LỊCH SỬ ĐỌC SAU KHI CÓ ĐỦ DỮ LIỆU
-            saveReadingHistory();
-
+            saveReadingHistory(); 
+            
         } else {
             console.error('Error fetching chapter info:', chapterInfoData.message);
             showErrorMessage();
-            return;
+            return; // Dừng lại nếu không lấy được thông tin chương
         }
 
-        // Fetch chapter pages
-        const pagesResponse = await fetch(`${API_BASE_URL}/getChapterPagesTrangDoc.php?comic_id=${comicId}&chapter_number=${currentChapterNumber}`);
+        // Fetch pages for the current chapter
+        const pagesResponse = await fetch(`${API_BASE_URL}/getChapterPagesTrangDoc.php?chapter_id=${currentChapterId}`); 
         if (!pagesResponse.ok) {
             const errorData = await pagesResponse.json();
-            console.log("không thể tải page");
+            console.log("Không thể tải page");
             throw new Error(errorData.message || 'Không thể tải trang truyện.');
         }
         const pagesData = await pagesResponse.json();
 
         const pagesContainer = document.getElementById('chapterImages');
         if (pagesContainer && pagesData.success && pagesData.data) {
-            pagesContainer.innerHTML = '';
+            pagesContainer.innerHTML = ''; // Xóa các hình ảnh cũ
+            brokenImageCount = 0; // Reset số lượng hình ảnh bị hỏng
             pagesData.data.forEach(page => {
                 const img = document.createElement('img');
                 img.src = page.URL;
@@ -624,14 +669,13 @@ async function fetchChapterData() {
                 pagesContainer.appendChild(img);
             });
         }
-        hideErrorMessage();
+        hideErrorMessage(); // Ẩn thông báo lỗi nếu mọi thứ tải thành công
     } catch (error) {
         console.error('Network or server error during data fetch:', error);
-        showErrorMessage();
+        showErrorMessage(); // Hiển thị thông báo lỗi nếu có lỗi
     }
 }
 
-// Hàm updateNavigationButtons() được định nghĩa ở đây để đảm bảo nó được gọi đúng lúc
 function updateNavigationButtons() {
     const prevChapterButton = document.getElementById('prevChapterBtn');
     const nextChapterButton = document.getElementById('nextChapterBtn');
@@ -660,7 +704,6 @@ function updateNavigationButtons() {
     }
 }
 
-// HÀM MỚI: Cập nhật hiển thị các liên kết dựa trên vai trò
 function updateRoleBasedLinks() {
     const role = localStorage.getItem("role"); // Lấy vai trò mới nhất
     const duyetBaiLink = document.getElementById("duyet-bai-link");
@@ -679,16 +722,29 @@ function updateRoleBasedLinks() {
         if (duyetBaiLink) duyetBaiLink.style.display = "flex";
         if (quanLyLink) quanLyLink.style.display = "flex";
     } else if (role === "user") {
-        // Có lẽ bạn muốn hiển thị link "cap-quyen-link" cho user để yêu cầu quyền tác giả?
+
         if (capQuyenLink) capQuyenLink.style.display = "flex";
     } else if (role === "author") {
         if (upLoadLink) upLoadLink.style.display = "flex";
     }
 }
 
+function updateChapter(newChapterId) {
+    currentChapterId = newChapterId; // Cập nhật chapter_id hiện tại
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('comic_id', currentComicId); 
+    newUrl.searchParams.set('chapter_id', currentChapterId); 
+    newUrl.searchParams.delete('chapter_number'); // Đảm bảo xóa tham số cũ
 
-document.addEventListener('DOMContentLoaded', () => {
-    currentChapterNumber = parseInt(getUrlParam('chapter_number')) || 1;
+    window.history.pushState({ path: newUrl.href }, '', newUrl.href);
+    
+    fetchChapterData(); 
+    displayComments(); 
+    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+}
+
+
+document.addEventListener('DOMContentLoaded', async () => { 
 
     const prevChapterBtnElement = document.getElementById('prevChapterBtn');
     const nextChapterBtnElement = document.getElementById('nextChapterBtn');
@@ -701,32 +757,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (prevChapterBtnElement) {
         prevChapterBtnElement.addEventListener('click', function(e) {
-            if (currentChapterNumber > 1) {
-                e.preventDefault();
-                currentChapterNumber--;
-                const newUrl = new URL(window.location.href);
-                newUrl.searchParams.set('chapter_number', currentChapterNumber);
-                window.history.pushState({ path: newUrl.href }, '', newUrl.href);
-                fetchChapterData();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+            e.preventDefault();
+            const currentIndex = chapterIdsSorted.indexOf(currentChapterId);
+            if (currentIndex > 0) { // Nếu không phải là chương đầu tiên
+                const prevChapterId = chapterIdsSorted[currentIndex - 1];
+                updateChapter(prevChapterId); 
+            } else {
+                alert('Đây là chương đầu tiên.');
             }
         });
     }
 
     if (nextChapterBtnElement) {
         nextChapterBtnElement.addEventListener('click', function(e) {
-            if (currentChapterNumber < totalChapters) {
-                e.preventDefault();
-                currentChapterNumber++;
-                const newUrl = new URL(window.location.href);
-                newUrl.searchParams.set('chapter_number', currentChapterNumber);
-                window.history.pushState({ path: newUrl.href }, '', newUrl.href);
-                fetchChapterData();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+            e.preventDefault();
+            const currentIndex = chapterIdsSorted.indexOf(currentChapterId);
+            if (currentIndex !== -1 && currentIndex < chapterIdsSorted.length - 1) { 
+                const nextChapterId = chapterIdsSorted[currentIndex + 1];
+                updateChapter(nextChapterId);
+            } else {
+                alert('Đây là chương cuối cùng.');
             }
         });
     }
-
     if (menuToggle && sidebar) {
         menuToggle.addEventListener('click', function () {
             sidebar.classList.toggle('active');
@@ -760,19 +813,16 @@ document.addEventListener('DOMContentLoaded', () => {
             logoutUser();
         });
     }
+        await checkLoginStatus(); 
 
-    // Thứ tự gọi hàm quan trọng:
-    // 1. Kiểm tra trạng thái đăng nhập để lấy currentUser
-    checkLoginStatus();
-    // 2. Gọi fetchChapterData để tải nội dung và LƯU LỊCH SỬ ĐỌC (nếu user đã đăng nhập)
-    fetchChapterData();
-    // 3. Hiển thị bình luận (có thể phụ thuộc vào currentUser)
+    await fetchChapterData();
+
     displayComments();
-    // 4. Cập nhật các liên kết dựa trên vai trò sau khi checkLoginStatus đã chạy
+
     updateRoleBasedLinks();
 
-});
 
+});
 document.addEventListener('DOMContentLoaded', function() {
     const mainHeader = document.getElementById('main_header');
     let lastScrollTop = 0;

@@ -15,6 +15,9 @@ if ($conn->connect_error) {
     exit();
 }
 
+// Thiết lập header để trả về JSON
+header('Content-Type: application/json; charset=utf-8');
+
 // Lấy phương thức HTTP request
 $request_method = $_SERVER["REQUEST_METHOD"];
 
@@ -22,160 +25,149 @@ switch ($request_method) {
     case 'GET':
         $comic_id = isset($_GET['comicId']) ? htmlspecialchars($_GET['comicId']) : null;
         $sort_order = isset($_GET['sort']) ? htmlspecialchars($_GET['sort']) : 'newest';
-        getComments($conn, $comic_id, $sort_order);
+        
+        // KHÔNG lấy chapter_id từ URL nữa
+        getComments($conn, $comic_id, $sort_order); 
         break;
 
     case 'POST':
-        createComment($conn);
+        $data = json_decode(file_get_contents("php://input"));
+        $comic_id = isset($data->comic_id) ? htmlspecialchars($data->comic_id) : null;
+        // BỎ chapter_id khỏi dữ liệu nhận được
+        $content = isset($data->content) ? htmlspecialchars($data->content) : null;
+        addComment($conn, $comic_id, $content); // KHÔNG truyền chapter_id vào đây nữa
         break;
 
     case 'DELETE':
-        deleteComment($conn);
-        break;
+    $data = json_decode(file_get_contents("php://input"));
+
+    // Đảm bảo comment_id được lấy
+    $comment_id = isset($data->comment_id) ? htmlspecialchars($data->comment_id) : null;
+
+    // KHAI BÁO VÀ GÁN GIÁ TRỊ CHO CÁC BIẾN NÀY TRƯỚC KHI SỬ DỤNG
+    $current_user_id_from_client = isset($data->uses_id) ? htmlspecialchars($data->uses_id) : null;
+    $current_user_role_from_client = isset($data->role) ? htmlspecialchars($data->role) : null;
+
+    // Bây giờ thì gọi hàm deleteComment với đủ 4 đối số
+    deleteComment($conn, $comment_id, $current_user_id_from_client, $current_user_role_from_client);
+    break;        break;
 
     default:
-        http_response_code(405);
-        echo json_encode(array("message" => "Phương thức không được phép."));
-        exit();
+        http_response_code(405); // Method Not Allowed
+        echo json_encode(array("message" => "Phương thức không được hỗ trợ."));
+        break;
 }
 
-function getComments($conn, $comic_id, $sort_order) {
-    header('Content-Type: application/json; charset=utf-8');
-
-    if ($comic_id === null || empty($comic_id)) {
+// Hàm getComments - CHỈ LỌC THEO COMIC_ID
+function getComments($conn, $comic_id, $sort_order) { 
+    if ($comic_id === null || empty($comic_id)) { 
         http_response_code(400);
-        echo json_encode(["message" => "Thiếu Comic ID."]);
+        echo json_encode(array("success" => false, "message" => "Thiếu comicId."));
         return;
     }
 
-    $order_by = '';
-    switch ($sort_order) {
-        case 'oldest':
-            $order_by = 'ORDER BY C.CREATE_AT ASC';
-            break;
-        case 'featured':
-            $order_by = 'ORDER BY C.FEATURED DESC, C.CREATE_AT DESC';
-            break;
-        case 'newest':
-        default:
-            $order_by = 'ORDER BY C.CREATE_AT DESC';
-            break;
+    $order_by_clause = "";
+    if ($sort_order === 'oldest') {
+        $order_by_clause = " ORDER BY COMMENT.CREATE_AT ASC";
+    } else { // 'newest' hoặc các giá trị khác
+        $order_by_clause = " ORDER BY COMMENT.CREATE_AT DESC";
     }
 
-    // Lấy thêm USES_ID của tác giả comment để client có thể kiểm tra quyền xóa
-    $query = "SELECT C.COMMENT_ID, C.CONTENT, C.CREATE_AT, C.USES_ID, U.USERNAME AS Author, U.AVATAR AS AuthorAvatar FROM COMMENT C JOIN USERS U ON C.USES_ID = U.USES_ID WHERE C.COMIC_ID = ? " . $order_by;
-    $stmt = $conn->prepare($query);
+    try {
+        // TRUY VẤN SQL CHỈ LỌC THEO COMIC_ID
+        $query = "SELECT COMMENT.COMMENT_ID, COMMENT.USES_ID, USERS.USERNAME AS Author,
+                                    CASE WHEN USERS.AVATAR IS NOT NULL AND USERS.AVATAR != '' THEN CONCAT('../Image/', USERS.AVATAR) ELSE '../Image/avatar.jpg' END AS AuthorAvatar,
+                                    COMMENT.CONTENT, COMMENT.CREATE_AT
+                             FROM COMMENT
+                             JOIN USERS ON COMMENT.USES_ID = USERS.USES_ID
+                             WHERE COMMENT.COMIC_ID = ? " . $order_by_clause; 
+        $stmt = $conn->prepare($query);
 
-    if ($stmt === false) {
-        error_log("Lỗi chuẩn bị truy vấn SQL getComments: " . $conn->error);
-        http_response_code(500);
-        echo json_encode(array("message" => "Lỗi chuẩn bị truy vấn SQL."));
-        return;
-    }
-
-    $stmt->bind_param("s", $comic_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $comments = $result->fetch_all(MYSQLI_ASSOC);
-    $stmt->close();
-
-    // Thêm đường dẫn đầy đủ cho avatar
-// Thêm đường dẫn đầy đủ cho avatar - SỬA PHẦN NÀY
-    foreach ($comments as &$comment) {
-        if (!empty($comment['AuthorAvatar'])) {
-            // Kiểm tra xem đường dẫn avatar đã là URL tuyệt đối (http/https) chưa
-            if (strpos($comment['AuthorAvatar'], 'http://') === 0 || strpos($comment['AuthorAvatar'], 'https://') === 0) {
-                // Nếu đã là URL tuyệt đối, giữ nguyên
-                // Không làm gì, đường dẫn đã đúng
-            } else {
-                // Nếu không phải URL tuyệt đối, thêm tiền tố ../Image/
-                $comment['AuthorAvatar'] = '../Image/' . $comment['AuthorAvatar'];
-            }
-        } else {
-            $comment['AuthorAvatar'] = '../Image/avatar.jpg'; // Avatar mặc định
+        if ($stmt === false) {
+            error_log("Lỗi chuẩn bị truy vấn SQL getComments: " . $conn->error);
+            http_response_code(500);
+            echo json_encode(array("success" => false, "message" => "Lỗi chuẩn bị truy vấn SQL."));
+            return;
         }
-    }
 
-    http_response_code(200);
-    echo json_encode($comments, JSON_UNESCAPED_UNICODE);}
+        $stmt->bind_param("s", $comic_id); // CHỈ BIND MỘT THAM SỐ 's' (cho comic_id)
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $comments = $result->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
 
-function createComment($conn) {
-    header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(array("success" => true, "comments" => $comments), JSON_UNESCAPED_UNICODE);
 
-    // Kiểm tra session user_id thay vì JWT
-    if (!isset($_SESSION['uses_id'])) {
-        http_response_code(401); // Unauthorized
-        echo json_encode(["message" => "Bạn cần đăng nhập để bình luận."]);
-        return;
-    }
-
-    $user_id = $_SESSION['uses_id']; // Lấy user_id từ session
-    $data = json_decode(file_get_contents("php://input"), true);
-
-    $content = isset($data['content']) ? trim($data['content']) : '';
-    $comic_id = isset($data['comic_id']) ? htmlspecialchars($data['comic_id']) : null;
-
-    if (empty($content) || $comic_id === null || empty($comic_id)) {
-        http_response_code(400); // Bad Request
-        echo json_encode(["message" => "Nội dung bình luận hoặc Comic ID không được để trống."]);
-        return;
-    }
-
-    // Sinh COMMENT_ID mới
-    $getMaxID = $conn->query("SELECT MAX(CAST(SUBSTRING(COMMENT_ID,3) AS UNSIGNED)) AS max_id FROM COMMENT");
-    if ($getMaxID === false) {
-        error_log("Lỗi truy vấn lấy max COMMENT_ID: " . $conn->error);
+    } catch (Exception $e) {
+        error_log("Lỗi xử lý getComments: " . $e->getMessage());
         http_response_code(500);
-        echo json_encode(["message" => "Lỗi hệ thống khi tạo ID bình luận."]);
-        return;
+        echo json_encode(array("success" => false, "message" => "Lỗi server nội bộ."));
     }
-    $row = $getMaxID->fetch_assoc();
-    $nextID = $row['max_id'] ? $row['max_id'] + 1 : 1;
-    $comment_id = "CM" . str_pad($nextID, 3, '0', STR_PAD_LEFT);
-
-    $create_at = date('Y-m-d H:i:s');
-
-    $query = "INSERT INTO COMMENT (COMMENT_ID, COMIC_ID, USES_ID, CONTENT, CREATE_AT) VALUES (?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($query);
-
-    if ($stmt === false) {
-        error_log("Lỗi chuẩn bị truy vấn SQL createComment: " . $conn->error);
-        http_response_code(500);
-        echo json_encode(array("message" => "Lỗi chuẩn bị truy vấn SQL."));
-        return;
-    }
-
-    $stmt->bind_param("sssss", $comment_id, $comic_id, $user_id, $content, $create_at);
-
-    if ($stmt->execute()) {
-        http_response_code(201); // Created
-        echo json_encode(["message" => "Bình luận đã được thêm thành công."]);
-    } else {
-        error_log("Lỗi khi thêm bình luận vào DB: " . $stmt->error);
-        http_response_code(500);
-        echo json_encode(["message" => "Không thể thêm bình luận."]);
-    }
-    $stmt->close();
 }
 
-function deleteComment($conn) {
-    header('Content-Type: application/json; charset=utf-8');
+// Hàm addComment - KHÔNG NHẬN chapter_id
+function addComment($conn, $comic_id, $content) { 
+    // Kiểm tra thông tin người dùng từ session
+    $uses_id = isset($_SESSION['uses_id']) ? $_SESSION['uses_id'] : null;
 
-    // Kiểm tra session user_id thay vì JWT
-    if (!isset($_SESSION['uses_id'])) {
+    if ($uses_id === null) {
+        http_response_code(401); // Unauthorized
+        echo json_encode(array("success" => false, "message" => "Bạn cần đăng nhập để bình luận."));
+        return;
+    }
+
+    // Chỉ kiểm tra comic_id và content
+    if ($comic_id === null || empty($comic_id) || $content === null || empty($content)) {
+        http_response_code(400); // Bad Request
+        echo json_encode(array("success" => false, "message" => "Thiếu comic_id hoặc nội dung bình luận."));
+        return;
+    }
+
+    try {
+        // TRUY VẤN SQL INSERT ĐÃ LOẠI BỎ 'CHAPTER_ID'
+        $query = "INSERT INTO COMMENT (COMIC_ID, USES_ID, CONTENT, CREATE_AT) VALUES (?, ?, ?, NOW())"; 
+        $stmt = $conn->prepare($query);
+
+        if ($stmt === false) {
+            error_log("Lỗi chuẩn bị truy vấn SQL addComment: " . $conn->error);
+            http_response_code(500);
+            echo json_encode(array("success" => false, "message" => "Lỗi chuẩn bị truy vấn SQL."));
+            return;
+        }
+
+        // bind_param ĐÃ THAY ĐỔI ĐỂ PHÙ HỢP: CHỈ CÓ comic_id, uses_id, content
+        $stmt->bind_param("sss", $comic_id, $uses_id, $content); 
+        $stmt->execute();
+
+        if ($stmt->affected_rows > 0) {
+            http_response_code(201); // Created
+            echo json_encode(array("success" => true, "message" => "Bình luận của bạn đã được thêm."));
+        } else {
+            http_response_code(500);
+            echo json_encode(array("success" => false, "message" => "Không thể thêm bình luận."));
+        }
+        $stmt->close();
+
+    } catch (Exception $e) {
+        error_log("Lỗi xử lý addComment: " . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(array("success" => false, "message" => "Lỗi server nội bộ."));
+    }
+}
+
+function deleteComment($conn, $comment_id, $current_user_id, $current_user_role) { // Thêm 2 tham số mới
+    // KHÔNG LẤY TỪ $_SESSION NỮA
+    // $current_user_id = isset($_SESSION['uses_id']) ? $_SESSION['uses_id'] : null;
+    // $current_user_role = isset($_SESSION['role']) ? $_SESSION['role'] : null;
+
+    if ($current_user_id === null) {
         http_response_code(401); // Unauthorized
         echo json_encode(["message" => "Bạn cần đăng nhập để xóa bình luận."]);
         return;
     }
 
-    $current_user_id = $_SESSION['uses_id']; // Lấy user_id từ session
-    $current_user_role = isset($_SESSION['role']) ? $_SESSION['role'] : 'user'; // Lấy role từ session
-
-    $data = json_decode(file_get_contents("php://input"), true);
-    $comment_id = isset($data['comment_id']) ? htmlspecialchars($data['comment_id']) : null;
-
     if ($comment_id === null || empty($comment_id)) {
-        http_response_code(400); // Bad Request
+        http_response_code(400);
         echo json_encode(["message" => "Thiếu ID bình luận."]);
         return;
     }
@@ -184,7 +176,7 @@ function deleteComment($conn) {
     $query_check = "SELECT USES_ID FROM COMMENT WHERE COMMENT_ID = ?";
     $stmt_check = $conn->prepare($query_check);
     if ($stmt_check === false) {
-        error_log("Lỗi chuẩn bị truy vấn SQL check comment owner: " . $conn->error);
+        error_log("Lỗi chuẩn bị truy vấn SQL kiểm tra quyền: " . $conn->error);
         http_response_code(500);
         echo json_encode(array("message" => "Lỗi chuẩn bị truy vấn SQL kiểm tra quyền."));
         return;
@@ -201,32 +193,39 @@ function deleteComment($conn) {
         return;
     }
 
-    // Kiểm tra quyền: admin hoặc chủ sở hữu bình luận
-    if ($current_user_role !== 'admin' && $current_user_id !== $comment['USES_ID']) {
-        http_response_code(403);
-        echo json_encode(["message" => "Bạn không có quyền xóa bình luận này."]);
-        return;
-    }
+    // Kiểm tra quyền:
+    // 1. Nếu người dùng hiện tại có vai trò 'admin' HOẶC
+    // 2. Nếu ID người dùng hiện tại khớp với USES_ID của bình luận
+    if ($current_user_role === 'admin' || $current_user_id === $comment['USES_ID']) {
+        $query = "DELETE FROM COMMENT WHERE COMMENT_ID = ?";
+        $stmt = $conn->prepare($query);
 
-    $query = "DELETE FROM COMMENT WHERE COMMENT_ID = ?";
-    $stmt = $conn->prepare($query);
+        if ($stmt === false) {
+            error_log("Lỗi chuẩn bị truy vấn SQL deleteComment (delete): " . $conn->error);
+            http_response_code(500);
+            echo json_encode(array("message" => "Lỗi chuẩn bị truy vấn SQL."));
+            return;
+        }
+        $stmt->bind_param("s", $comment_id);
 
-    if ($stmt === false) {
-        error_log("Lỗi chuẩn bị truy vấn SQL deleteComment (delete): " . $conn->error);
-        http_response_code(500);
-        echo json_encode(array("message" => "Lỗi chuẩn bị truy vấn SQL."));
-        return;
-    }
-    $stmt->bind_param("s", $comment_id);
-
-    if ($stmt->execute()) {
-        http_response_code(200);
-        echo json_encode(["message" => "Bình luận đã được xóa thành công."]);
+        if ($stmt->execute()) {
+            if ($stmt->affected_rows > 0) {
+                http_response_code(200);
+                echo json_encode(["message" => "Bình luận đã được xóa thành công."]);
+            } else {
+                http_response_code(404);
+                echo json_encode(["message" => "Không tìm thấy bình luận để xóa."]);
+            }
+        } else {
+            error_log("Lỗi thực thi truy vấn SQL deleteComment: " . $stmt->error);
+            http_response_code(500);
+            echo json_encode(["message" => "Lỗi khi xóa bình luận."]);
+        }
+        $stmt->close();
     } else {
-        error_log("Lỗi khi xóa bình luận từ DB: " . $stmt->error);
-        http_response_code(500);
-        echo json_encode(["message" => "Không thể xóa bình luận."]);
+        http_response_code(403); // Forbidden
+        echo json_encode(["message" => "Bạn không có quyền xóa bình luận này."]);
     }
-    $stmt->close();
 }
+$conn->close();
 ?>

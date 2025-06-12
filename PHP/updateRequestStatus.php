@@ -1,5 +1,5 @@
 <?php
-$conn = new mysqli("localhost", "root", "", "webtruyen_1");
+$conn = new mysqli("localhost", "root", "", "webtruyen");
 $conn->set_charset("utf8");
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
